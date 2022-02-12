@@ -1,4 +1,4 @@
-# Full Stack PLANTS API
+# API COURS DEVELOPPEMENT PYTHON FLASK
 
 ## Motivations
 Cette API permet de gérer une table etudiants créée dans la base de données.
