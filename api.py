@@ -4,6 +4,7 @@ from flask import Flask, abort, jsonify,request
 from flask_sqlalchemy import SQLAlchemy
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -19,7 +20,14 @@ host=os.getenv('hostname')
 app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:{}@{}:5432/appg3".format(motdepasse,host)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db=SQLAlchemy(app)
+#CORS(app, resources={r"*/api/*" : {origins: '*'}})
+CORS(app)
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.add('Access-Control-Allow-Headers', 'GET, POST, PATCH, DELETE, OPTION')
+    return response
 
 ################################################################
 #
@@ -63,19 +71,32 @@ DELETE /etudiants/id (Supprimer un étudiant)
 
 ################################################################
 #
-#             Endpoint liste de tous les étudiants
+#             Endpoint liste de tous les étudiants et enregistrer aussi un etudiant
 #
 ################################################################
-@app.route('/etudiants',methods=['GET'])
+@app.route('/etudiants',methods=['GET','POST'])
 def liste_etudiants():
-    # requete avec SQLAlchemy pour récupérer la liste de tous les étudiants
-    etudiants=Etudiant.query.all()
-    etudiants_formatted=[et.format() for et in etudiants]
-    return jsonify({
-        'success':True,
-        'total_etudiants':Etudiant.query.count(),
-        'etudiants':etudiants_formatted
-    })
+    if request.method=='GET':
+        # requete avec SQLAlchemy pour récupérer la liste de tous les étudiants
+        etudiants=Etudiant.query.all()
+        etudiants_formatted=[et.format() for et in etudiants]
+        return jsonify({
+            'success':True,
+            'total_etudiants':Etudiant.query.count(),
+            'etudiants':etudiants_formatted
+        })
+    elif request.method=='POST':
+        body=request.get_json() #recupérer les données json
+        new_nom=body.get('nom',None)
+        new_prenom=body.get('prenom',None)
+        new_adresse=body.get('adresse',None)
+        etudiant=Etudiant(nom=new_nom,prenom=new_prenom,adresse=new_adresse)
+        etudiant.insert()
+        return jsonify({
+            'success':True,
+            'totat_etudiants':Etudiant.query.count(),
+            'etudiants':[ et.format() for et in Etudiant.query.all()]
+        })
     
 ################################################################
 #
@@ -101,19 +122,7 @@ def selectionner_un_etudiant(id):
 #             Endpoint créer un nouvel etudiant
 #
 ################################################################
-@app.route('/etudiants',methods=['POST'])
-def ajouter_etudiant():
-    body=request.get_json() #recupérer les données json
-    new_nom=body.get('nom',None)
-    new_prenom=body.get('prenom',None)
-    new_adresse=body.get('adresse',None)
-    etudiant=Etudiant(nom=new_nom,prenom=new_prenom,adresse=new_adresse)
-    etudiant.insert()
-    return jsonify({
-        'success':True,
-        'totat_etudiants':Etudiant.query.count(),
-        'etudiants':[ et.format() for et in Etudiant.query.all()]
-    })
+
 
 ################################################################
 #
